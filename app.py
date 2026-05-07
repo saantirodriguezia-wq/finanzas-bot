@@ -91,7 +91,7 @@ def analizar_con_claude(texto=None, imagen_data=None, imagen_tipo=None):
         content = texto
 
     message = anthropic_client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-sonnet-4-5",
         max_tokens=1000,
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": content}]
