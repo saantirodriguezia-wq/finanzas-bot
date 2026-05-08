@@ -6,9 +6,14 @@ from googleapiclient.discovery import build
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
 def get_sheets_service():
-    creds_json = os.environ.get("GOOGLE_CREDENTIALS")
-    creds_dict = json.loads(creds_json)
-    # Arreglar el private_key si tiene \\n en lugar de \n
+    creds_json = os.environ.get("GOOGLE_CREDENTIALS", "")
+    creds_json = creds_json.strip()
+    if not creds_json:
+        raise ValueError("GOOGLE_CREDENTIALS está vacío")
+    try:
+        creds_dict = json.loads(creds_json)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Error parseando JSON: {e} | Primeros 100 chars: {creds_json[:100]}")
     if "private_key" in creds_dict:
         creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
     creds = service_account.Credentials.from_service_account_info(
