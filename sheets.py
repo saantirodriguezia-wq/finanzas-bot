@@ -1,43 +1,15 @@
 import os
 import base64
+import json
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
 def get_sheets_service():
-    private_key_raw = os.environ.get("GOOGLE_PRIVATE_KEY", "")
-    
-    # Limpiar la clave de todas las formas posibles
-    private_key = private_key_raw.replace("\\n", "\n").replace("\\\\n", "\n")
-    
-    # Si no tiene saltos de línea reales, reconstruir la clave
-    if "-----BEGIN PRIVATE KEY-----" in private_key and "\n" not in private_key:
-        private_key = private_key.replace("-----BEGIN PRIVATE KEY-----", "-----BEGIN PRIVATE KEY-----\n")
-        private_key = private_key.replace("-----END PRIVATE KEY-----", "\n-----END PRIVATE KEY-----")
-        # Dividir el cuerpo en líneas de 64 caracteres
-        parts = private_key.split("\n")
-        if len(parts) == 3:
-            header = parts[0]
-            body = parts[1]
-            footer = parts[2]
-            body_lines = [body[i:i+64] for i in range(0, len(body), 64)]
-            private_key = header + "\n" + "\n".join(body_lines) + "\n" + footer + "\n"
-
-    creds_dict = {
-        "type": "service_account",
-        "project_id": os.environ.get("GOOGLE_PROJECT_ID"),
-        "private_key_id": os.environ.get("GOOGLE_PRIVATE_KEY_ID"),
-        "private_key": private_key,
-        "client_email": os.environ.get("GOOGLE_CLIENT_EMAIL"),
-        "client_id": os.environ.get("GOOGLE_CLIENT_ID"),
-        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-        "token_uri": "https://oauth2.googleapis.com/token",
-        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-        "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/finanzas-bot%40finanzas-bot-495615.iam.gserviceaccount.com",
-        "universe_domain": "googleapis.com"
-    }
-
+    creds_b64 = os.environ.get("GOOGLE_CREDENTIALS_B64", "")
+    creds_json = base64.b64decode(creds_b64).decode("utf-8")
+    creds_dict = json.loads(creds_json)
     creds = service_account.Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
     return build("sheets", "v4", credentials=creds)
 
