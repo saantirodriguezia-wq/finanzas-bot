@@ -1,11 +1,29 @@
 import os
+import base64
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
 def get_sheets_service():
-    private_key = os.environ.get("GOOGLE_PRIVATE_KEY", "").replace("\\n", "\n")
+    private_key_raw = os.environ.get("GOOGLE_PRIVATE_KEY", "")
+    
+    # Limpiar la clave de todas las formas posibles
+    private_key = private_key_raw.replace("\\n", "\n").replace("\\\\n", "\n")
+    
+    # Si no tiene saltos de línea reales, reconstruir la clave
+    if "-----BEGIN PRIVATE KEY-----" in private_key and "\n" not in private_key:
+        private_key = private_key.replace("-----BEGIN PRIVATE KEY-----", "-----BEGIN PRIVATE KEY-----\n")
+        private_key = private_key.replace("-----END PRIVATE KEY-----", "\n-----END PRIVATE KEY-----")
+        # Dividir el cuerpo en líneas de 64 caracteres
+        parts = private_key.split("\n")
+        if len(parts) == 3:
+            header = parts[0]
+            body = parts[1]
+            footer = parts[2]
+            body_lines = [body[i:i+64] for i in range(0, len(body), 64)]
+            private_key = header + "\n" + "\n".join(body_lines) + "\n" + footer + "\n"
+
     creds_dict = {
         "type": "service_account",
         "project_id": os.environ.get("GOOGLE_PROJECT_ID"),
@@ -19,6 +37,7 @@ def get_sheets_service():
         "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/finanzas-bot%40finanzas-bot-495615.iam.gserviceaccount.com",
         "universe_domain": "googleapis.com"
     }
+
     creds = service_account.Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
     return build("sheets", "v4", credentials=creds)
 
